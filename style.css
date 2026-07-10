@@ -1,0 +1,248 @@
+/* ---------- Design tokens ---------- */
+:root{
+  --font: 'Josefin Sans', sans-serif;
+
+  /* Light theme */
+  --bg-body-light: hsl(0, 0%, 98%);
+  --bg-todo-light: hsl(0, 0%, 100%);
+  --text-primary-light: hsl(235, 19%, 35%);
+  --text-secondary-light: hsl(236, 9%, 61%);
+  --border-light: hsl(233, 11%, 84%);
+  --hover-bg-light: hsl(236, 33%, 92%);
+  --shadow-light: 0 35px 50px -15px rgba(194,195,214,0.5);
+
+  /* Dark theme */
+  --bg-body-dark: hsl(235, 21%, 11%);
+  --bg-todo-dark: hsl(235, 24%, 19%);
+  --text-primary-dark: hsl(234, 39%, 85%);
+  --text-secondary-dark: hsl(234, 11%, 52%);
+  --border-dark: hsl(237, 14%, 26%);
+  --hover-bg-dark: hsl(233, 14%, 35%);
+  --shadow-dark: 0 35px 50px -15px rgba(0,0,0,0.5);
+
+  --gradient: linear-gradient(135deg, hsl(192, 100%, 67%), hsl(280, 87%, 65%));
+  --red: hsl(0, 100%, 67%);
+
+  --bg-body: var(--bg-body-light);
+  --bg-todo: var(--bg-todo-light);
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  --border: var(--border-light);
+  --hover-bg: var(--hover-bg-light);
+  --shadow: var(--shadow-light);
+}
+
+[data-theme="dark"]{
+  --bg-body: var(--bg-body-dark);
+  --bg-todo: var(--bg-todo-dark);
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --border: var(--border-dark);
+  --hover-bg: var(--hover-bg-dark);
+  --shadow: var(--shadow-dark);
+}
+
+*, *::before, *::after{ box-sizing: border-box; margin: 0; padding: 0; }
+button{ font: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+ul{ list-style: none; }
+input{ font: inherit; border: none; background: none; color: inherit; }
+input:focus{ outline: none; }
+
+body{
+  font-family: var(--font);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-hero{
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 200px;
+  background-image: url('images/bg-mobile-light.jpg');
+  background-size: cover;
+  background-position: top center;
+  z-index: 0;
+}
+[data-theme="dark"] .bg-hero{
+  background-image: url('images/bg-mobile-dark.jpg');
+}
+@media (min-width: 800px){
+  .bg-hero{
+    height: 300px;
+    background-image: url('images/bg-desktop-light.jpg');
+  }
+  [data-theme="dark"] .bg-hero{
+    background-image: url('images/bg-desktop-dark.jpg');
+  }
+}
+
+.wrapper{
+  position: relative;
+  z-index: 1;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.app-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.app-header h1{
+  color: #fff;
+  font-size: 28px;
+  letter-spacing: 10px;
+  font-weight: 700;
+}
+.theme-toggle{ display:flex; align-items:center; justify-content:center; }
+.theme-toggle:hover svg circle,
+.theme-toggle:hover svg path{ opacity: 0.7; }
+
+.new-todo{
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--bg-todo);
+  border-radius: 6px;
+  padding: 18px 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.checkbox-blank{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.new-todo input{
+  width: 100%;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.new-todo input::placeholder{ color: var(--text-secondary); }
+
+.todo-panel{
+  background: var(--bg-todo);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.todo-list{ display: flex; flex-direction: column; }
+
+.todo-item{
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-todo);
+}
+.todo-item.dragging{ opacity: 0.4; }
+.todo-item.drag-over{ border-top: 2px solid hsl(220, 98%, 61%); }
+
+ .checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.checkbox:hover {
+  border-color: transparent;
+  background: linear-gradient(var(--bg-todo), var(--bg-todo)) padding-box,
+              var(--gradient) border-box;
+  border: 1px solid transparent;
+}
+.check-icon{ display: none; }
+.todo-item.completed .check-icon{ display: block; }
+
+.todo-text{
+  flex: 1;
+  font-size: 16px;
+  word-break: break-word;
+  color: var(--text-primary);
+}
+.todo-item.completed .todo-text{
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.delete-btn{
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.todo-item:hover .delete-btn,
+.todo-item:focus-within .delete-btn{ opacity: 1; }
+.delete-btn:hover{ color: var(--red); }
+.delete-btn svg{ fill: currentColor; }
+
+.list-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.filter-btn{
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 14px;
+}
+.filter-btn:hover{ color: var(--text-primary); }
+.filter-btn.active{ color: hsl(220, 98%, 61%); }
+
+.filters-desktop{ display: none; gap: 18px; }
+.filters-mobile{
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  background: var(--bg-todo);
+  box-shadow: var(--shadow);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.clear-completed:hover{ color: var(--text-primary); }
+
+.drag-hint{
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 40px;
+}
+
+@media (min-width: 700px){
+  .wrapper{ max-width: 540px; padding-top: 64px; }
+  .app-header h1{ font-size: 40px; letter-spacing: 15px; }
+  .new-todo{ padding: 20px 24px; margin-bottom: 24px; }
+  .todo-item{ padding: 20px 24px; font-size: 18px; }
+  .checkbox-blank, .checkbox{ width: 28px; height: 28px; }
+  .filters-desktop{ display: flex; }
+  .filters-mobile{ display: none; }
+}
+
+.empty-message{
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
