@@ -12,6 +12,16 @@
 </head>
 <body>
 
+  <div class="lock-screen" id="lockScreen">
+    <form class="lock-card" id="lockForm">
+      <h2>T O D O</h2>
+      <p>Enter the access code to open this list.</p>
+      <input type="password" id="lockInput" placeholder="Access code" autocomplete="off" />
+      <button type="submit">Unlock</button>
+      <p class="lock-error" id="lockError" style="display:none">Incorrect code. Try again.</p>
+    </form>
+  </div>
+
   <div class="bg-hero" aria-hidden="true"></div>
 
   <main class="wrapper">

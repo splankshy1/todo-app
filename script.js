@@ -1,6 +1,14 @@
 // ---------- Config ----------
 const API_BASE = '/api/todos';
 
+// ---------- Access code (session-only, not stored permanently) ----------
+function getAccessKey(){
+  return sessionStorage.getItem('appAccessKey') || '';
+}
+function authHeaders(extra = {}){
+  return { 'x-app-key': getAccessKey(), ...extra };
+}
+
 // ---------- State ----------
 let todos = [];
 let currentFilter = 'all';
@@ -17,10 +25,15 @@ const iconSun = document.getElementById('iconSun');
 const iconMoon = document.getElementById('iconMoon');
 const template = document.getElementById('todoItemTemplate');
 const allFilterButtons = document.querySelectorAll('.filter-btn');
+const lockScreen = document.getElementById('lockScreen');
+const lockForm = document.getElementById('lockForm');
+const lockInput = document.getElementById('lockInput');
+const lockError = document.getElementById('lockError');
 
 // ---------- API helpers ----------
 async function apiGetTodos(){
-  const res = await fetch(API_BASE);
+  const res = await fetch(API_BASE, { headers: authHeaders() });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to load todos');
   return res.json();
 }
@@ -28,9 +41,10 @@ async function apiGetTodos(){
 async function apiCreateTodo(text){
   const res = await fetch(API_BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ text })
   });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to create todo');
   return res.json();
 }
@@ -38,29 +52,33 @@ async function apiCreateTodo(text){
 async function apiToggleTodo(id, completed){
   const res = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ completed })
   });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to update todo');
   return res.json();
 }
 
 async function apiDeleteTodo(id){
-  const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: authHeaders() });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to delete todo');
 }
 
 async function apiClearCompleted(){
-  const res = await fetch(API_BASE, { method: 'DELETE' });
+  const res = await fetch(API_BASE, { method: 'DELETE', headers: authHeaders() });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to clear completed todos');
 }
 
 async function apiReorder(orderList){
   const res = await fetch(`${API_BASE}/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ orderList })
   });
+  if(res.status === 401) throw { unauthorized: true };
   if(!res.ok) throw new Error('Failed to save new order');
 }
 
@@ -135,11 +153,24 @@ function showError(message){
 }
 
 // ---------- Actions (each syncs with the server, then re-renders) ----------
+function showLockScreen(message){
+  lockScreen.style.display = 'flex';
+  sessionStorage.removeItem('appAccessKey');
+  if(message){
+    lockError.textContent = message;
+    lockError.style.display = 'block';
+  }
+}
+
 async function loadTodos(){
   try{
     todos = await apiGetTodos();
     render();
   } catch(err){
+    if(err && err.unauthorized){
+      showLockScreen('Incorrect code. Try again.');
+      return;
+    }
     showError('Could not reach the server. Is server.js running?');
     console.error(err);
   }
@@ -151,6 +182,7 @@ async function addTodo(text){
     todos.push(newTodo);
     render();
   } catch(err){
+    if(err && err.unauthorized){ showLockScreen('Incorrect code. Try again.'); return; }
     showError('Could not add todo. Check your connection to the server.');
     console.error(err);
   }
@@ -167,6 +199,7 @@ async function toggleTodo(id){
   } catch(err){
     todo.completed = !nextState; // revert on failure
     render();
+    if(err && err.unauthorized){ showLockScreen('Incorrect code. Try again.'); return; }
     showError('Could not save that change.');
     console.error(err);
   }
@@ -181,6 +214,7 @@ async function deleteTodo(id){
   } catch(err){
     todos = previous; // revert on failure
     render();
+    if(err && err.unauthorized){ showLockScreen('Incorrect code. Try again.'); return; }
     showError('Could not delete that todo.');
     console.error(err);
   }
@@ -195,6 +229,7 @@ async function clearCompleted(){
   } catch(err){
     todos = previous;
     render();
+    if(err && err.unauthorized){ showLockScreen('Incorrect code. Try again.'); return; }
     showError('Could not clear completed todos.');
     console.error(err);
   }
@@ -213,6 +248,7 @@ async function reorderTodos(draggedItemId, targetItemId){
   try{
     await apiReorder(todos.map(t => t.id));
   } catch(err){
+    if(err && err.unauthorized){ showLockScreen('Incorrect code. Try again.'); return; }
     showError('New order was not saved to the server.');
     console.error(err);
   }
@@ -250,9 +286,25 @@ allFilterButtons.forEach(btn => {
   });
 });
 
+// ---------- Lock screen ----------
+lockForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const code = lockInput.value.trim();
+  if(!code) return;
+  sessionStorage.setItem('appAccessKey', code);
+  lockError.style.display = 'none';
+  lockScreen.style.display = 'none';
+  loadTodos();
+});
+
 // ---------- Init ----------
 const savedTheme = localStorage.getItem('theme') ||
   (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(savedTheme);
 
-loadTodos();
+if(getAccessKey()){
+  lockScreen.style.display = 'none';
+  loadTodos();
+} else {
+  lockScreen.style.display = 'flex';
+}

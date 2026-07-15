@@ -30,6 +30,27 @@ mongoose.connect(cloudURI)
   .then(() => console.log('Connected securely to MongoDB Atlas Cloud! 🌍🌱'))
   .catch(err => console.error('MongoDB cloud connection error:', err));
 
+// ---------- Access control ----------
+// Simple shared passcode so the demo list isn't publicly editable.
+// This is NOT full authentication (no per-user accounts) — it's a
+// lightweight gate to keep strangers from reading/editing the shared
+// list before our presentation. A "future improvement" in our report
+// is proper per-user accounts.
+const APP_ACCESS_KEY = process.env.APP_ACCESS_KEY;
+
+if (!APP_ACCESS_KEY) {
+  console.warn('Warning: APP_ACCESS_KEY not set in .env — /api/todos routes are currently unprotected.');
+}
+
+function requireAccessKey(req, res, next) {
+  if (!APP_ACCESS_KEY) return next(); // no key configured, skip check
+  const providedKey = req.header('x-app-key');
+  if (providedKey !== APP_ACCESS_KEY) {
+    return res.status(401).json({ error: 'Invalid or missing access code.' });
+  }
+  next();
+}
+
 // Todo Schema & Model
 const todoSchema = new mongoose.Schema({
   text: { type: String, required: true },
@@ -46,7 +67,8 @@ todoSchema.method('toJSON', function() {
 
 const Todo = mongoose.model('Todo', todoSchema);
 
-// ---------- API Routes ----------
+// ---------- API Routes (all protected by the access code) ----------
+app.use('/api/todos', requireAccessKey);
 
 // 1. GET all todos
 app.get('/api/todos', async (req, res) => {
